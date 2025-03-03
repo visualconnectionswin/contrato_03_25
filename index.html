@@ -4,269 +4,232 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WIN Contrato Generator</title>
-    <!-- Fuente Inter desde Google Fonts -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <!-- Tailwind CSS y Moment.js desde CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment-with-locales.min.js"></script>
+    <!-- Estilos personalizados -->
     <style>
-      /* Variables de color */
-      :root {
-        --primary-color: #4a90e2;
-        --secondary-color: #50e3c2;
-        --background-color: #f7f9fc;
-        --header-bg: #34495e;
-        --header-text: #ffffff;
-        --sidebar-bg: #ffffff;
-        --sidebar-border: #e0e0e0;
-        --text-color: #333333;
-        --accent-color: #e74c3c;
-      }
-
-      /* Estilos globales */
-      * {
-        box-sizing: border-box;
-      }
+      /* Tipografía y colores generales */
       body {
         margin: 0;
-        font-family: 'Inter', sans-serif;
-        background-color: var(--background-color);
-        color: var(--text-color);
-      }
-      h1, h2, h3 {
-        margin: 0;
         padding: 0;
+        font-family: 'Roboto', sans-serif;
+        background-color: #eef2f6;
+        color: #333;
       }
-
-      /* Header */
-      header {
-        background-color: var(--header-bg);
-        color: var(--header-text);
-        padding: 20px;
-        text-align: center;
-      }
-
-      /* Layout principal en tres columnas */
+      /* Contenedor principal: grid de tres columnas */
       .container {
         display: grid;
-        grid-template-columns: 300px 1fr 300px;
-        gap: 20px;
+        grid-template-columns: 250px 1fr 300px;
+        grid-template-areas: "sidebar main right";
+        height: 100vh;
+      }
+      /* SIDEBAR IZQUIERDO: Opciones de Contrato */
+      .sidebar {
+        grid-area: sidebar;
+        background: linear-gradient(135deg, #283048, #859398);
         padding: 20px;
+        overflow-y: auto;
+        color: #fff;
       }
-
-      /* Sidebar Izquierdo: Opciones de Contratación */
-      .left-sidebar {
-        background-color: var(--sidebar-bg);
-        border: 1px solid var(--sidebar-border);
-        border-radius: 8px;
-        padding: 20px;
+      .sidebar-collapsed-text {
+        display: none; /* En este diseño se muestra todo el contenido */
       }
-      .left-sidebar h2 {
-        font-size: 1.2rem;
-        margin-bottom: 10px;
+      .sidebar-content h1 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+        padding-bottom: 0.5rem;
       }
-      .left-sidebar form {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
+      .sidebar label,
+      .sidebar input,
+      .sidebar select {
+        display: block;
+        width: 100%;
+        margin-bottom: 0.75rem;
       }
-      .left-sidebar label {
-        font-weight: 600;
-      }
-      .left-sidebar input,
-      .left-sidebar select {
-        padding: 8px;
-        border: 1px solid var(--sidebar-border);
+      .sidebar input,
+      .sidebar select {
+        padding: 0.5rem;
+        border: none;
         border-radius: 4px;
-        font-size: 0.9rem;
       }
-      .checkbox-group {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-      }
-
-      /* Panel central: Contrato */
+      /* PANEL DEL CONTRATO */
       .contract-panel {
-        background-color: #ffffff;
-        border: 1px solid var(--sidebar-border);
+        grid-area: main;
+        padding: 40px;
+        overflow-y: auto;
+      }
+      #contractOutput {
+        background-color: #fff;
         border-radius: 8px;
         padding: 30px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        animation: fadeIn 0.5s ease-in-out;
       }
-      .contract-panel h2 {
-        font-size: 1.8rem;
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      #contractOutput h2 {
         text-align: center;
+        font-size: 2rem;
         margin-bottom: 20px;
-        color: var(--primary-color);
       }
       #planSummary {
-        background-color: var(--primary-color);
+        background-color: #007acc;
         color: #fff;
         padding: 10px;
-        border-radius: 6px;
+        border-radius: 4px;
         text-align: center;
-        font-weight: 600;
         margin-bottom: 20px;
-      }
-      #contractContent {
-        font-size: 0.95rem;
-        line-height: 1.6;
-      }
-
-      /* Sidebar Derecho: Ofertas Frecuentes */
-      .right-sidebar {
-        background-color: var(--sidebar-bg);
-        border: 1px solid var(--sidebar-border);
-        border-radius: 8px;
-        padding: 20px;
-      }
-      .right-sidebar h2 {
         font-size: 1.2rem;
-        margin-bottom: 10px;
+        font-weight: bold;
+      }
+      /* SIDEBAR DERECHO: Planes Frecuentes */
+      .right-sidebar {
+        grid-area: right;
+        background: linear-gradient(135deg, #1f1c2c, #928dab);
+        padding: 20px;
+        overflow-y: auto;
+        color: #fff;
+      }
+      .right-sidebar h1 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+        padding-bottom: 0.5rem;
       }
       .offer-button {
+        display: block;
         width: 100%;
-        background-color: var(--secondary-color);
+        padding: 10px;
+        margin-bottom: 10px;
+        background-color: #ff6f61;
         color: #fff;
         border: none;
-        padding: 12px;
-        border-radius: 6px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        margin-bottom: 10px;
+        border-radius: 4px;
+        text-align: center;
         cursor: pointer;
         transition: background-color 0.3s ease;
       }
       .offer-button:hover {
-        background-color: var(--primary-color);
+        background-color: #e85c50;
       }
-
-      /* Modal para selección de SVA */
-      .modal {
+      /* Modal para opciones SVA */
+      #svaModal {
         position: fixed;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
         display: flex;
         align-items: center;
         justify-content: center;
+        z-index: 100;
         visibility: hidden;
         opacity: 0;
-        transition: opacity 0.3s ease;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
       }
-      .modal.active {
+      #svaModal.active {
         visibility: visible;
         opacity: 1;
       }
-      .modal-content {
-        background-color: #ffffff;
+      #svaModal > div {
+        background: #fff;
         padding: 20px;
         border-radius: 8px;
         width: 90%;
-        max-width: 500px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        max-width: 400px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
       }
-      .modal-content h3 {
-        margin-bottom: 15px;
+      #svaModal h2 {
+        margin-top: 0;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
       }
-      .modal-content .options {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-bottom: 20px;
-      }
-      .modal-content .option-btn {
-        flex: 1 1 45%;
-        padding: 10px;
-        background-color: var(--sidebar-bg);
-        border: 1px solid var(--sidebar-border);
-        border-radius: 4px;
-        text-align: center;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-      }
-      .modal-content .option-btn:hover {
-        background-color: var(--secondary-color);
-        color: #fff;
-      }
-      .modal-content .modal-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-      }
-      .modal-content .modal-actions button {
+      #svaModal button {
         padding: 8px 12px;
         border: none;
         border-radius: 4px;
         cursor: pointer;
-        font-weight: 600;
       }
-      .modal-content .cancel-btn {
+      #svaModal .cancel {
         background-color: #ccc;
-        color: #333;
+        margin-right: 10px;
       }
-      .modal-content .save-btn {
-        background-color: var(--primary-color);
+      #svaModal .save {
+        background-color: #007acc;
         color: #fff;
       }
-
-      /* Responsive */
+      /* Ajustes responsivos */
       @media (max-width: 1024px) {
         .container {
-          grid-template-columns: 1fr;
+          grid-template-columns: 200px 1fr;
+          grid-template-areas:
+            "sidebar main"
+            "sidebar main";
         }
-        .left-sidebar,
         .right-sidebar {
-          margin-bottom: 20px;
+          display: none;
+        }
+      }
+      @media (max-width: 640px) {
+        .container {
+          grid-template-columns: 1fr;
+          grid-template-areas:
+            "main"
+            "sidebar";
+        }
+        .sidebar {
+          order: 2;
+        }
+        .contract-panel {
+          order: 1;
         }
       }
     </style>
   </head>
   <body>
-    <!-- Encabezado -->
-    <header>
-      <h1>WIN Contrato Generator</h1>
-    </header>
-
-    <!-- Layout principal -->
     <div class="container">
-      <!-- Sidebar Izquierdo: Opciones de Contratación -->
-      <aside class="left-sidebar">
-        <h2>Opciones de Contratación</h2>
-        <form id="contractForm">
-          <!-- Ubicación -->
-          <div>
+      <!-- SIDEBAR IZQUIERDO: OPCIONES DE CONTRATO -->
+      <div class="sidebar">
+        <div class="sidebar-collapsed-text">OPCIONES DE CONTRATO</div>
+        <div class="sidebar-content">
+          <h1>Opciones de Contratación</h1>
+          <form id="contractForm">
+            <!-- Ubicación -->
             <label for="location">Ubicación</label>
             <select id="location">
               <option value="lima" selected>Lima</option>
               <option value="provincia">Provincia</option>
             </select>
-          </div>
-          <!-- Tipo de Documento -->
-          <div>
+            <!-- Tipo de Documento -->
             <label for="documentType">Tipo de Documento</label>
             <select id="documentType">
               <option value="dni" selected>DNI/CE/RUC 10</option>
               <option value="ruc">RUC 20</option>
             </select>
-          </div>
-          <!-- Pago de Instalación (solo para RUC 20) -->
-          <div id="installmentSection" style="display: none;">
-            <label for="installmentOption">Pago de Instalación</label>
-            <select id="installmentOption">
-              <option value="1">1 cuota – S/ 60</option>
-              <option value="3">3 cuotas – S/ 120</option>
-            </select>
-          </div>
-          <!-- Tipo de Servicio -->
-          <div>
+            <!-- Plan de Instalación (solo para RUC 20) -->
+            <div id="installmentSection" class="hidden">
+              <label for="installmentOption">Pago de Instalación</label>
+              <select id="installmentOption">
+                <option value="1">1 cuota – S/ 60</option>
+                <option value="3">3 cuotas – S/ 120</option>
+              </select>
+            </div>
+            <!-- Tipo de Servicio -->
             <label>Tipo de Servicio</label>
-            <div class="checkbox-group">
+            <div style="display: flex; gap: 10px;">
               <label>
-                <input type="checkbox" name="serviceType" value="fibra" checked disabled />
+                <input type="checkbox" name="serviceType" value="fibra" checked onclick="return false;" />
                 Fibra
               </label>
               <label>
@@ -274,88 +237,116 @@
                 SVA
               </label>
             </div>
-          </div>
-          <!-- Velocidad de Fibra (visible si se requiere) -->
-          <div id="fiberSpeedSection" style="display: none;">
-            <label for="fiberSpeed">Velocidad de Fibra (Mbps)</label>
-            <select id="fiberSpeed">
-              <!-- Opciones cargadas dinámicamente -->
-            </select>
-          </div>
-          <!-- Servicios de Valor Agregado (SVA) -->
-          <div id="svaSection" style="display: none;">
-            <label>Servicios de Valor Agregado (SVA)</label>
-            <div id="svaCategories" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
-              <button type="button" class="option-btn" data-category="fono">Fono</button>
-              <button type="button" class="option-btn" data-category="mesh">Mesh</button>
-              <button type="button" class="option-btn" data-category="winbox">Winbox</button>
-              <button type="button" class="option-btn" data-category="wintv">Wintv</button>
-              <button type="button" class="option-btn" data-category="winGames">Win Games</button>
-              <button type="button" class="option-btn" data-category="dgo">DGO</button>
+            <!-- Velocidad de Fibra (visible solo si se selecciona Fibra) -->
+            <div id="fiberSpeedSection" class="hidden">
+              <label for="fiberSpeed">Velocidad de Fibra (Mbps)</label>
+              <select id="fiberSpeed"></select>
             </div>
-            <div id="selectedSvaDisplay" style="margin-top: 10px; font-size: 0.9rem; color: #555;"></div>
-          </div>
-        </form>
-      </aside>
-
-      <!-- Panel Central: Contrato -->
-      <main class="contract-panel">
-        <h2>CONTRATO DE WIN</h2>
-        <!-- Resumen del Plan -->
-        <div id="planSummary">Resumen del Plan</div>
-        <!-- Contenido del Contrato -->
-        <div id="contractContent">
-          <p>El contenido del contrato se mostrará aquí de forma dinámica.</p>
+            <!-- Servicios de Valor Agregado (SVA) -->
+            <div id="svaSection" class="hidden">
+              <label>Servicios de Valor Agregado (SVA)</label>
+              <div
+                id="svaCategories"
+                style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;"
+              >
+                <button type="button" class="sva-category-btn" data-category="fono">
+                  Fono
+                </button>
+                <button type="button" class="sva-category-btn" data-category="mesh">
+                  Mesh
+                </button>
+                <button type="button" class="sva-category-btn" data-category="winbox">
+                  Winbox
+                </button>
+                <button type="button" class="sva-category-btn" data-category="wintv">
+                  Wintv
+                </button>
+                <button type="button" class="sva-category-btn" data-category="winGames">
+                  Win Games
+                </button>
+                <button type="button" class="sva-category-btn" data-category="dgo">
+                  DGO
+                </button>
+              </div>
+              <div id="selectedSvaDisplay" style="margin-top: 10px; font-size: 0.9rem;"></div>
+            </div>
+          </form>
         </div>
-      </main>
+      </div>
 
-      <!-- Sidebar Derecho: Ofertas Frecuentes -->
-      <aside class="right-sidebar">
-        <h2>Ofertas Frecuentes</h2>
-        <button type="button" class="offer-button" data-fiber="400" data-sva='["mesh_400"]'>
-          Plan de 400 + 1 Mesh
-        </button>
-        <button type="button" class="offer-button" data-fiber="600" data-sva='["mesh_600"]'>
-          Plan de 600 + 2 Mesh
-        </button>
-        <button type="button" class="offer-button" data-fiber="1000" data-sva='["mesh_1000"]'>
-          Plan de 1000 + 2 Mesh
-        </button>
-        <button type="button" class="offer-button" data-fiber="350" data-sva='["winbox_plan_hb_1","hb_wintv_l1_max_350"]'>
-          Plan de 350 + Wintv L1 Max + Winbox
-        </button>
-        <button type="button" class="offer-button" data-fiber="550" data-sva='["hb_wintv_l1_max_550_wg","mesh_comodato_1","winbox_plan_hb_1"]'>
-          Plan de 550 Premium
-        </button>
-        <button type="button" class="offer-button" data-fiber="750" data-sva='["hb_wintv_l1_max_750_wg","mesh_comodato_1","winbox_plan_hb_1","win_games_hb"]'>
-          Plan de 750 Completo
-        </button>
-        <button type="button" class="offer-button" data-fiber="1000" data-sva='["hb_wintv_l1_max_1000_wg","mesh_comodato_1","winbox_plan_hb_1","win_games_hb"]'>
-          Plan de 1000 Completo
-        </button>
-      </aside>
-    </div>
-
-    <!-- Modal para selección de SVA -->
-    <div id="svaModal" class="modal">
-      <div class="modal-content">
-        <h3 id="svaModalTitle">Selecciona Opciones SVA</h3>
-        <div class="options" id="svaModalOptions">
-          <button type="button" class="option-btn" data-option="fono">Fono</button>
-          <button type="button" class="option-btn" data-option="mesh">Mesh</button>
-          <button type="button" class="option-btn" data-option="winbox">Winbox</button>
-          <button type="button" class="option-btn" data-option="wintv">Wintv</button>
-          <button type="button" class="option-btn" data-option="winGames">Win Games</button>
-          <button type="button" class="option-btn" data-option="dgo">DGO</button>
+      <!-- PANEL DEL CONTRATO -->
+      <div class="contract-panel">
+        <div id="contractOutput">
+          <h2>CONTRATO DE WIN</h2>
+          <!-- Resumen del plan -->
+          <div id="planSummary"></div>
+          <!-- Contenido dinámico del contrato -->
+          <div id="contractContent" class="prose" style="font-size: 0.95rem;"></div>
         </div>
-        <div class="modal-actions">
-          <button type="button" class="cancel-btn">Cancelar</button>
-          <button type="button" class="save-btn">Guardar</button>
+      </div>
+
+      <!-- SIDEBAR DERECHO: PLANES FRECUENTES -->
+      <div class="right-sidebar">
+        <h1>Ofertas más frecuentes</h1>
+        <div id="offerButtons">
+          <button type="button" data-fiber="400" data-sva='["mesh_400"]' class="offer-button">
+            Plan de 400 + 1 Mesh
+          </button>
+          <button type="button" data-fiber="600" data-sva='["mesh_600"]' class="offer-button">
+            Plan de 600 + 2 Mesh
+          </button>
+          <button type="button" data-fiber="1000" data-sva='["mesh_1000"]' class="offer-button">
+            Plan de 1000 + 2 Mesh
+          </button>
+          <button
+            type="button"
+            data-fiber="350"
+            data-sva='["winbox_plan_hb_1","hb_wintv_l1_max_350"]'
+            class="offer-button"
+          >
+            Plan de 350 + Wintv L1 Max + Winbox en comodato
+          </button>
+          <button
+            type="button"
+            data-fiber="550"
+            data-sva='["hb_wintv_l1_max_550_wg","mesh_comodato_1","winbox_plan_hb_1"]'
+            class="offer-button"
+          >
+            Plan de 550 Wintv L1 Max Premium + Mesh comodato + Winbox comodato
+          </button>
+          <button
+            type="button"
+            data-fiber="750"
+            data-sva='["hb_wintv_l1_max_750_wg","mesh_comodato_1","winbox_plan_hb_1","win_games_hb"]'
+            class="offer-button"
+          >
+            Plan de 750 Wintv L1 Max Premium + Mesh comodato + Winbox comodato + Win Games
+          </button>
+          <button
+            type="button"
+            data-fiber="1000"
+            data-sva='["hb_wintv_l1_max_1000_wg","mesh_comodato_1","winbox_plan_hb_1","win_games_hb"]'
+            class="offer-button"
+          >
+            Plan de 1000 Wintv L1 Max Premium + Mesh comodato + Winbox comodato + Win Games
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Scripts externos para la lógica (adaptar según necesidad) -->
+    <!-- Modal para selección de opciones SVA -->
+    <div id="svaModal">
+      <div>
+        <h2 id="svaModalTitle"></h2>
+        <div id="svaModalOptions" style="margin-top: 10px;"></div>
+        <div style="margin-top: 20px; text-align: right;">
+          <button id="svaModalCancel" class="cancel">Cancelar</button>
+          <button id="svaModalSave" class="save">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts externos (constantes y lógica) -->
     <script src="constants.js"></script>
     <script src="script.js"></script>
   </body>
