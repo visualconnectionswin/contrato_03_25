@@ -1,353 +1,779 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WIN Contrato Generator</title>
-    <!-- Tailwind CSS y Moment.js desde CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment-with-locales.min.js"></script>
-    <!-- Estilos personalizados -->
-    <style>
-      /* Tipografía y colores generales */
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: 'Roboto', sans-serif;
-        background-color: #eef2f6;
-        color: #333;
-      }
-      /* Contenedor principal: grid de tres columnas */
-      .container {
-        display: grid;
-        grid-template-columns: 250px 1fr 300px;
-        grid-template-areas: "sidebar main right";
-        height: 100vh;
-      }
-      /* SIDEBAR IZQUIERDO: Opciones de Contrato */
-      .sidebar {
-        grid-area: sidebar;
-        background: linear-gradient(135deg, #283048, #859398);
-        padding: 20px;
-        overflow-y: auto;
-        color: #fff;
-      }
-      .sidebar-collapsed-text {
-        display: none; /* En este diseño se muestra todo el contenido */
-      }
-      .sidebar-content h1 {
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-        border-bottom: 2px solid rgba(255, 255, 255, 0.3);
-        padding-bottom: 0.5rem;
-      }
-      .sidebar label,
-      .sidebar input,
-      .sidebar select {
-        display: block;
-        width: 100%;
-        margin-bottom: 0.75rem;
-      }
-      .sidebar input,
-      .sidebar select {
-        padding: 0.5rem;
-        border: none;
-        border-radius: 4px;
-      }
-      /* PANEL DEL CONTRATO */
-      .contract-panel {
-        grid-area: main;
-        padding: 40px;
-        overflow-y: auto;
-      }
-      #contractOutput {
-        background-color: #fff;
-        border-radius: 8px;
-        padding: 30px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        animation: fadeIn 0.5s ease-in-out;
-      }
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      #contractOutput h2 {
-        text-align: center;
-        font-size: 2rem;
-        margin-bottom: 20px;
-      }
-      #planSummary {
-        background-color: #007acc;
-        color: #fff;
-        padding: 10px;
-        border-radius: 4px;
-        text-align: center;
-        margin-bottom: 20px;
-        font-size: 1.2rem;
-        font-weight: bold;
-      }
-      /* SIDEBAR DERECHO: Planes Frecuentes */
-      .right-sidebar {
-        grid-area: right;
-        background: linear-gradient(135deg, #1f1c2c, #928dab);
-        padding: 20px;
-        overflow-y: auto;
-        color: #fff;
-      }
-      .right-sidebar h1 {
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-        border-bottom: 2px solid rgba(255, 255, 255, 0.3);
-        padding-bottom: 0.5rem;
-      }
-      .offer-button {
-        display: block;
-        width: 100%;
-        padding: 10px;
-        margin-bottom: 10px;
-        background-color: #ff6f61;
-        color: #fff;
-        border: none;
-        border-radius: 4px;
-        text-align: center;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-      }
-      .offer-button:hover {
-        background-color: #e85c50;
-      }
-      /* Modal para opciones SVA */
-      #svaModal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 100;
-        visibility: hidden;
-        opacity: 0;
-        transition: opacity 0.3s ease, visibility 0.3s ease;
-      }
-      #svaModal.active {
-        visibility: visible;
-        opacity: 1;
-      }
-      #svaModal > div {
-        background: #fff;
-        padding: 20px;
-        border-radius: 8px;
-        width: 90%;
-        max-width: 400px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-      }
-      #svaModal h2 {
-        margin-top: 0;
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-      }
-      #svaModal button {
-        padding: 8px 12px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-      }
-      #svaModal .cancel {
-        background-color: #ccc;
-        margin-right: 10px;
-      }
-      #svaModal .save {
-        background-color: #007acc;
-        color: #fff;
-      }
-      /* Ajustes responsivos */
-      @media (max-width: 1024px) {
-        .container {
-          grid-template-columns: 200px 1fr;
-          grid-template-areas:
-            "sidebar main"
-            "sidebar main";
-        }
-        .right-sidebar {
-          display: none;
-        }
-      }
-      @media (max-width: 640px) {
-        .container {
-          grid-template-columns: 1fr;
-          grid-template-areas:
-            "main"
-            "sidebar";
-        }
-        .sidebar {
-          order: 2;
-        }
-        .contract-panel {
-          order: 1;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <!-- SIDEBAR IZQUIERDO: OPCIONES DE CONTRATO -->
-      <div class="sidebar">
-        <div class="sidebar-collapsed-text">OPCIONES DE CONTRATO</div>
-        <div class="sidebar-content">
-          <h1>Opciones de Contratación</h1>
-          <form id="contractForm">
-            <!-- Ubicación -->
-            <label for="location">Ubicación</label>
-            <select id="location">
-              <option value="lima" selected>Lima</option>
-              <option value="provincia">Provincia</option>
-            </select>
-            <!-- Tipo de Documento -->
-            <label for="documentType">Tipo de Documento</label>
-            <select id="documentType">
-              <option value="dni" selected>DNI/CE/RUC 10</option>
-              <option value="ruc">RUC 20</option>
-            </select>
-            <!-- Plan de Instalación (solo para RUC 20) -->
-            <div id="installmentSection" class="hidden">
-              <label for="installmentOption">Pago de Instalación</label>
-              <select id="installmentOption">
-                <option value="1">1 cuota – S/ 60</option>
-                <option value="3">3 cuotas – S/ 120</option>
-              </select>
-            </div>
-            <!-- Tipo de Servicio -->
-            <label>Tipo de Servicio</label>
-            <div style="display: flex; gap: 10px;">
-              <label>
-                <input type="checkbox" name="serviceType" value="fibra" checked onclick="return false;" />
-                Fibra
-              </label>
-              <label>
-                <input type="checkbox" name="serviceType" value="sva" />
-                SVA
-              </label>
-            </div>
-            <!-- Velocidad de Fibra (visible solo si se selecciona Fibra) -->
-            <div id="fiberSpeedSection" class="hidden">
-              <label for="fiberSpeed">Velocidad de Fibra (Mbps)</label>
-              <select id="fiberSpeed"></select>
-            </div>
-            <!-- Servicios de Valor Agregado (SVA) -->
-            <div id="svaSection" class="hidden">
-              <label>Servicios de Valor Agregado (SVA)</label>
-              <div
-                id="svaCategories"
-                style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;"
-              >
-                <button type="button" class="sva-category-btn" data-category="fono">
-                  Fono
-                </button>
-                <button type="button" class="sva-category-btn" data-category="mesh">
-                  Mesh
-                </button>
-                <button type="button" class="sva-category-btn" data-category="winbox">
-                  Winbox
-                </button>
-                <button type="button" class="sva-category-btn" data-category="wintv">
-                  Wintv
-                </button>
-                <button type="button" class="sva-category-btn" data-category="winGames">
-                  Win Games
-                </button>
-                <button type="button" class="sva-category-btn" data-category="dgo">
-                  DGO
-                </button>
-              </div>
-              <div id="selectedSvaDisplay" style="margin-top: 10px; font-size: 0.9rem;"></div>
-            </div>
-          </form>
-        </div>
-      </div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Procesador de archivos de clientes - CRM</title>
+  <!-- Fuente Poppins -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
+        integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    :root {
+      /* Variable para controlar el número de clientes por línea */
+      --clients-per-line: 2;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 20px;
+    }
+    #drop-area {
+      border: 2px dashed #ccc;
+      border-radius: 20px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+      transition: border-color 0.3s;
+    }
+    #drop-area.highlight {
+      border-color: purple;
+    }
+    #search-container {
+      margin-bottom: 10px;
+      text-align: right;
+    }
+    #search-input {
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .category-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .category-icon {
+      font-size: 1.2em;
+    }
+    .clients-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .client-block {
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 10px;
+      background-color: #aef39b;
+      box-sizing: border-box;
+      flex: 0 0 calc(100% / var(--clients-per-line) - 10px);
+      transition: background-color 0.3s, transform 0.3s, opacity 0.3s;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    /* Estilo para clientes derivados */
+    .client-block.derivado {
+      background-color: #ffe0b2;
+    }
+    .client-block p {
+      margin: 2px 0;
+    }
+    .client-block:hover {
+      transform: scale(1.02);
+    }
+    .client-buttons {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+    }
+    .client-buttons button {
+      margin-top: 0;
+    }
+    .client-buttons button:last-child {
+      margin-left: auto;
+    }
+    .client-notes-container {
+      margin-top: 10px;
+    }
+    /* Recuadro de notas en línea: se mantiene en su posición original */
+    .client-notes {
+      border: 1px solid #ddd;
+      padding: 5px;
+      border-radius: 5px;
+      min-height: 30px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow-y: auto;
+      max-height: 100px;
+      cursor: pointer;
+      position: relative;
+    }
+    /* La fecha se muestra siempre debajo del contenido de la nota */
+    .note-timestamp {
+      font-size: 0.7em;
+      color: #777;
+      display: block;
+      text-align: right;
+      margin-top: 5px;
+    }
+    button {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 5px;
+      background-color: #6c63ff;
+      color: #fff;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #5750d4;
+    }
+    h2 {
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 5px;
+      margin-top: 20px;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    /* Estilos para el modal de edición de nota */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: 10% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 500px;
+      border-radius: 10px;
+      position: relative;
+    }
+    .close-button {
+      position: absolute;
+      right: 10px;
+      top: 5px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #aaa;
+      cursor: pointer;
+    }
+    .close-button:hover {
+      color: #000;
+    }
+    /* Botón para guardar el JSON */
+    #guardar-json-btn {
+      margin-top: 10px;
+      background-color: #009688;
+    }
+  </style>
+  <!-- Se incluye la librería XLSX para leer archivos Excel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+  <h1>Procesador de archivos de clientes - CRM</h1>
+  <p>Arrastra y suelta un archivo o haz clic en el botón para seleccionar uno desde tu dispositivo.</p>
+  <div id="drop-area">
+    <p>Arrastra y suelta el archivo aquí</p>
+    <p>o</p>
+    <input type="file" id="file-input" accept=".xls,.xlsx,.html,.htm">
+  </div>
 
-      <!-- PANEL DEL CONTRATO -->
-      <div class="contract-panel">
-        <div id="contractOutput">
-          <h2>CONTRATO DE WIN</h2>
-          <!-- Resumen del plan -->
-          <div id="planSummary"></div>
-          <!-- Contenido dinámico del contrato -->
-          <div id="contractContent" class="prose" style="font-size: 0.95rem;"></div>
-        </div>
-      </div>
+  <div id="search-container">
+    <input type="text" id="search-input" placeholder="Buscar por Nombre o DNI">
+  </div>
 
-      <!-- SIDEBAR DERECHO: PLANES FRECUENTES -->
-      <div class="right-sidebar">
-        <h1>Ofertas más frecuentes</h1>
-        <div id="offerButtons">
-          <button type="button" data-fiber="400" data-sva='["mesh_400"]' class="offer-button">
-            Plan de 400 + 1 Mesh
-          </button>
-          <button type="button" data-fiber="600" data-sva='["mesh_600"]' class="offer-button">
-            Plan de 600 + 2 Mesh
-          </button>
-          <button type="button" data-fiber="1000" data-sva='["mesh_1000"]' class="offer-button">
-            Plan de 1000 + 2 Mesh
-          </button>
-          <button
-            type="button"
-            data-fiber="350"
-            data-sva='["winbox_plan_hb_1","hb_wintv_l1_max_350"]'
-            class="offer-button"
-          >
-            Plan de 350 + Wintv L1 Max + Winbox en comodato
-          </button>
-          <button
-            type="button"
-            data-fiber="550"
-            data-sva='["hb_wintv_l1_max_550_wg","mesh_comodato_1","winbox_plan_hb_1"]'
-            class="offer-button"
-          >
-            Plan de 550 Wintv L1 Max Premium + Mesh comodato + Winbox comodato
-          </button>
-          <button
-            type="button"
-            data-fiber="750"
-            data-sva='["hb_wintv_l1_max_750_wg","mesh_comodato_1","winbox_plan_hb_1","win_games_hb"]'
-            class="offer-button"
-          >
-            Plan de 750 Wintv L1 Max Premium + Mesh comodato + Winbox comodato + Win Games
-          </button>
-          <button
-            type="button"
-            data-fiber="1000"
-            data-sva='["hb_wintv_l1_max_1000_wg","mesh_comodato_1","winbox_plan_hb_1","win_games_hb"]'
-            class="offer-button"
-          >
-            Plan de 1000 Wintv L1 Max Premium + Mesh comodato + Winbox comodato + Win Games
-          </button>
-        </div>
-      </div>
+  <!-- Botón para guardar el estado en un archivo JSON -->
+  <button id="guardar-json-btn">Guardar Estado JSON</button>
+
+  <div id="results"></div>
+
+  <!-- Modal para edición de nota -->
+  <div id="note-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-button">&times;</span>
+      <h3>Editar Nota</h3>
+      <textarea id="note-modal-textarea" rows="5" style="width:100%;"></textarea>
+      <div id="note-modal-timestamp" style="font-size:0.8em; color:#777; margin-top:10px;"></div>
+      <button id="note-modal-save">Guardar</button>
+      <button id="note-modal-close">Cerrar</button>
     </div>
+  </div>
 
-    <!-- Modal para selección de opciones SVA -->
-    <div id="svaModal">
-      <div>
-        <h2 id="svaModalTitle"></h2>
-        <div id="svaModalOptions" style="margin-top: 10px;"></div>
-        <div style="margin-top: 20px; text-align: right;">
-          <button id="svaModalCancel" class="cancel">Cancelar</button>
-          <button id="svaModalSave" class="save">Guardar</button>
-        </div>
-      </div>
-    </div>
+  <script>
+    // Declaramos el objeto global para almacenar el estado de cada cliente
+    let clientesEstado = {};
 
-    <!-- Scripts externos (constantes y lógica) -->
-    <script src="constants.js"></script>
-    <script src="script.js"></script>
-  </body>
+    // Función para cargar el estado inicial desde el JSON (si existe)
+    function cargarJSONEstado() {
+      fetch('clientes_estado.json')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error("No se pudo cargar el JSON");
+          }
+          return response.json();
+        })
+        .then(data => {
+          clientesEstado = data;
+        })
+        .catch(err => {
+          console.warn("No se encontró el archivo JSON, se usará objeto vacío", err);
+          clientesEstado = {};
+        });
+    }
+
+    // Función para actualizar el estado de un cliente (por DNI)
+    function getEstadoCliente(dni) {
+      return clientesEstado[dni] || { copiado: "no", derivado: "no", nota: "", timestamp: "" };
+    }
+    function actualizarEstadoCliente(dni, newState) {
+      clientesEstado[dni] = { ...getEstadoCliente(dni), ...newState };
+    }
+
+    // Funciones para manejar el estado "derivado"
+    function getDerivedDnis() {
+      return Object.keys(clientesEstado).filter(dni => getEstadoCliente(dni).derivado === "si");
+    }
+    function saveDerivedDni(dni) {
+      actualizarEstadoCliente(dni, { derivado: "si" });
+    }
+    function removeDerivedDni(dni) {
+      actualizarEstadoCliente(dni, { derivado: "no" });
+    }
+    function isDniDerived(dni) {
+      return getEstadoCliente(dni).derivado === "si";
+    }
+
+    // Funciones para manejar el estado "copiado"
+    function setCopiedState(dni, state) {
+      actualizarEstadoCliente(dni, { copiado: state ? "si" : "no" });
+    }
+    function isCopied(dni) {
+      return getEstadoCliente(dni).copiado === "si";
+    }
+
+    // Funciones para manejar las notas
+    function getNoteDataForDni(dni) {
+      const estado = getEstadoCliente(dni);
+      return { note: estado.nota || '', timestamp: estado.timestamp || '' };
+    }
+    function saveNotesForDni(dni, note) {
+      if (note && note.trim() !== "") {
+        const now = new Date();
+        const timestamp = now.toLocaleDateString() + ' ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        actualizarEstadoCliente(dni, { nota: note, timestamp: timestamp });
+      } else {
+        actualizarEstadoCliente(dni, { nota: "", timestamp: "" });
+      }
+    }
+
+    // Función para guardar el JSON actualizado y descargarlo
+    function guardarJSON() {
+      const dataStr = JSON.stringify(clientesEstado, null, 2);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "clientes_estado.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarJSONEstado();
+
+      const clientsPerLine = 6;
+      document.documentElement.style.setProperty('--clients-per-line', clientsPerLine);
+
+      const dropArea = document.getElementById('drop-area');
+      const fileInput = document.getElementById('file-input');
+      const resultsContainer = document.getElementById('results');
+      const searchInput = document.getElementById('search-input');
+      const guardarJSONBtn = document.getElementById('guardar-json-btn');
+
+      let currentRows = [];
+
+      guardarJSONBtn.addEventListener('click', guardarJSON);
+
+      function applySearchFilter() {
+        const searchTerm = searchInput.value.toLowerCase();
+        resultsContainer.querySelectorAll('.clients-container').forEach(container => {
+          container.childNodes.forEach(clientBlock => {
+            const blockText = clientBlock.textContent.toLowerCase();
+            clientBlock.style.display = blockText.includes(searchTerm) ? '' : 'none';
+          });
+        });
+      }
+      searchInput.addEventListener('input', applySearchFilter);
+
+      // Previene comportamientos por defecto en el área de arrastre
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+      });
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, () => dropArea.classList.add('highlight'), false);
+      });
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, () => dropArea.classList.remove('highlight'), false);
+      });
+      dropArea.addEventListener('drop', handleDrop, false);
+      fileInput.addEventListener('change', (e) => {
+        let files = e.target.files;
+        handleFiles(files);
+      });
+      function handleFiles(files) {
+        if (files.length === 0) return;
+        const file = files[0];
+        resultsContainer.innerHTML = '';
+        const fileName = file.name.toLowerCase();
+        if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
+          readExcel(file);
+        } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
+          readHtml(file);
+        } else {
+          alert('Formato de archivo no soportado.');
+        }
+      }
+      function readExcel(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          let data = e.target.result;
+          let workbook = XLSX.read(data, { type: 'binary', cellText: true });
+          let firstSheetName = workbook.SheetNames[0];
+          let worksheet = workbook.Sheets[firstSheetName];
+          const rawData = [];
+          const range = XLSX.utils.decode_range(worksheet['!ref']);
+          for (let r = range.s.r; r <= range.e.r; r++) {
+            const row = [];
+            for (let c = range.s.c; c <= range.e.c; c++) {
+              const cellRef = XLSX.utils.encode_cell({r: r, c: c});
+              const cell = worksheet[cellRef];
+              if (!cell) { row.push(''); continue; }
+              if (cell.t === 'n' && cell.w) { row.push(cell.w); }
+              else { row.push(cell.v); }
+            }
+            rawData.push(row);
+          }
+          processData(rawData);
+        };
+        reader.onerror = function(err) {
+          alert("Error al leer el archivo Excel.");
+        };
+        reader.readAsBinaryString(file);
+      }
+      function readHtml(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const htmlText = e.target.result;
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(htmlText, 'text/html');
+          const table = doc.querySelector('table');
+          if (!table) {
+            alert("No se encontró una tabla en el archivo HTML.");
+            return;
+          }
+          let rows = [];
+          const trElements = table.querySelectorAll('tr');
+          trElements.forEach(tr => {
+            let row = [];
+            const cells = tr.querySelectorAll('th, td');
+            cells.forEach(cell => row.push(cell.textContent.trim()));
+            rows.push(row);
+          });
+          processData(rows);
+        };
+        reader.onerror = function(err) {
+          alert("Error al leer el archivo HTML.");
+        };
+        reader.readAsText(file);
+      }
+      
+      // Función que genera el texto a copiar para cada cliente
+      function getClientCopyText(clientInfo) {
+        let text = `Nombre: ${clientInfo.nombre}\n${clientInfo.docLabel}: ${clientInfo.dni}\n`;
+        if(clientInfo.category === "installed") {
+          text += "Instalada!";
+        } else if(clientInfo.category === "programmed") {
+          let scheduledTime = clientInfo.rowData[37] || "";
+          let tramo = "";
+          if(scheduledTime.startsWith("08")) tramo = "8 a 12";
+          else if(scheduledTime.startsWith("12")) tramo = "12 a 4";
+          else if(scheduledTime.startsWith("16") || scheduledTime.startsWith("4")) tramo = "4 a 8";
+          else tramo = scheduledTime;
+          text += `Programado para: ${clientInfo.rowData[36]} de ${tramo}`;
+        } else if(clientInfo.category === "reviewed") {
+          text += `Número de contacto: ${clientInfo.rowData[9] || ''}\nDistrito: ${clientInfo.rowData[13] || ''}\nLlamar a programar por favor`;
+        } else if(clientInfo.category === "notInstalled") {
+          let scheduledTime = clientInfo.rowData[37] || "";
+          let tramo = "";
+          if(scheduledTime.startsWith("08")) tramo = "8 a 12";
+          else if(scheduledTime.startsWith("12")) tramo = "12 a 4";
+          else if(scheduledTime.startsWith("16") || scheduledTime.startsWith("4")) tramo = "4 a 8";
+          else tramo = scheduledTime;
+          text += `Celular: ${clientInfo.rowData[9] || ''}\nDistrito: ${clientInfo.rowData[13] || ''}\nProgramado para: ${clientInfo.rowData[36]} de ${tramo}\nMe puede facilitar información del status de este cliente por favor`;
+        } else if(clientInfo.category === "inProgress") {
+          text += "En progreso";
+        } else if(clientInfo.category === "desaprobados") {
+          text += `${clientInfo.rowData[24] || ''} - ${clientInfo.rowData[25] || ''}`;
+        }
+        return text;
+      }
+
+      function processData(rows) {
+        currentRows = rows;
+        const now = new Date();
+        function updateCount(categoryContainer) {
+          categoryContainer.countSpan.textContent = " (" + categoryContainer.clientsContainer.childElementCount + ")";
+        }
+        const createCategoryContainer = (title, iconClass) => {
+          const container = document.createElement('div');
+          const header = document.createElement('h2');
+          header.style.cursor = 'pointer';
+          const categoryHeader = document.createElement('div');
+          categoryHeader.classList.add('category-header');
+          const iconSpan = document.createElement('span');
+          iconSpan.className = `category-icon ${iconClass}`;
+          iconSpan.setAttribute('aria-hidden', 'true');
+          const titleSpan = document.createElement('span');
+          titleSpan.textContent = title;
+          const countSpan = document.createElement('span');
+          countSpan.textContent = " (0)";
+          countSpan.style.fontSize = "0.8em";
+          countSpan.style.marginLeft = "10px";
+          const toggleIndicator = document.createElement('span');
+          toggleIndicator.style.fontSize = "0.8em";
+          toggleIndicator.style.marginLeft = "10px";
+          toggleIndicator.textContent = "Ocultar [-]";
+          categoryHeader.appendChild(iconSpan);
+          categoryHeader.appendChild(titleSpan);
+          categoryHeader.appendChild(countSpan);
+          categoryHeader.appendChild(toggleIndicator);
+          header.appendChild(categoryHeader);
+          const clientsContainer = document.createElement('div');
+          clientsContainer.classList.add('clients-container');
+          clientsContainer.style.display = 'flex';
+          container.appendChild(header);
+          container.appendChild(clientsContainer);
+          header.addEventListener('click', () => {
+            if(clientsContainer.style.display === 'none'){
+              clientsContainer.style.display = 'flex';
+              toggleIndicator.textContent = 'Ocultar [-]';
+            } else {
+              clientsContainer.style.display = 'none';
+              toggleIndicator.textContent = 'Ver [+]';
+            }
+          });
+          return { container, clientsContainer, countSpan };
+        };
+
+        const installed = createCategoryContainer("Clientes instalados", "fas fa-check-circle");
+        const programmed = createCategoryContainer("Clientes programados", "fas fa-calendar-check");
+        const reviewed = createCategoryContainer("Clientes revisados", "fas fa-search");
+        const notInstalled = createCategoryContainer("Clientes no instalados", "fas fa-times-circle");
+        const inProgress = createCategoryContainer("Clientes en progreso", "fas fa-spinner fa-spin");
+        const desaprobados = createCategoryContainer("Clientes desaprobados", "fas fa-ban");
+
+        const clientsData = [];
+        for (let i = 1; i < rows.length; i++) {
+          let row = rows[i];
+          try {
+            let nombre = row[7] || '';
+            let dni = row[6] || '';
+            let tipoDoc = (row[5] || '').trim().toLowerCase();
+            let expectedLength = 0;
+            let docLabel = "DNI";
+            if (tipoDoc === "dni") {
+              expectedLength = 8;
+              docLabel = "DNI";
+            } else if (tipoDoc === "carnet de extranjeria") {
+              expectedLength = 9;
+              docLabel = "C.E.";
+            } else if (tipoDoc === "ruc") {
+              expectedLength = 11;
+              docLabel = "RUC";
+            }
+            dni = dni.toString();
+            if (expectedLength > 0 && dni.length < expectedLength) {
+              dni = dni.padStart(expectedLength, '0');
+            }
+            let statePedido = (row[24] || "").trim().toLowerCase();
+            let estadoOrden = (row[27] || "").trim().toLowerCase();
+            let category = "";
+            if (estadoOrden === "ejecutada") {
+              category = "installed";
+            } else if (statePedido === "validado" && estadoOrden === "programada" && row[36] && row[36].trim() !== "" && row[37] && row[37].trim() !== "") {
+              let scheduledDateStr = row[36].trim();
+              let scheduledTimeStr = row[37].trim();
+              let dateParts = scheduledDateStr.split("-");
+              if (dateParts.length < 3) {
+                category = "desaprobados";
+              } else {
+                let day = parseInt(dateParts[0], 10);
+                let month = parseInt(dateParts[1], 10) - 1;
+                let year = parseInt(dateParts[2], 10);
+                let timeParts = scheduledTimeStr.split(/[:\s]+/);
+                let hour = parseInt(timeParts[0], 10);
+                let minute = parseInt(timeParts[1], 10);
+                let second = parseInt(timeParts[2], 10);
+                if (timeParts.length > 3) {
+                  let ampm = timeParts[3].toUpperCase();
+                  if (ampm === "PM" && hour < 12) { hour += 12; }
+                  if (ampm === "AM" && hour === 12) { hour = 0; }
+                }
+                let scheduledDateTime = new Date(year, month, day, hour, minute, second);
+                let scheduledEndTime = new Date(scheduledDateTime.getTime() + 4 * 60 * 60 * 1000);
+                if (now <= scheduledEndTime) {
+                  category = "programmed";
+                } else {
+                  category = "notInstalled";
+                }
+              }
+            } else if (statePedido === "revisado") {
+              category = "reviewed";
+            } else if (statePedido === "en progreso") {
+              category = "inProgress";
+            } else {
+              category = "desaprobados";
+            }
+            clientsData.push({ rowData: row, category: category, nombre: nombre, dni: dni, docLabel: docLabel });
+          } catch(err) {
+            console.error(`Error procesando la fila ${i}: ${err}`);
+          }
+        }
+        clientsData.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        clientsData.forEach(clientInfo => {
+          const row = clientInfo.rowData;
+          const category = clientInfo.category;
+          const nombre = clientInfo.nombre;
+          const dni = clientInfo.dni;
+          const docLabel = clientInfo.docLabel;
+          const clientDiv = document.createElement('div');
+          clientDiv.classList.add('client-block');
+
+          let contentHTML = `
+            <p>Nombre: ${nombre}</p>
+            <p>${docLabel}: <span class="dni" style="cursor: pointer; text-decoration: underline;">${dni}</span></p>
+          `;
+          if (category === "installed") {
+            contentHTML += `<p>Instalada!</p>`;
+          } else if (category === "programmed") {
+            let scheduledTime = row[37] || "";
+            let tramo = "";
+            if (scheduledTime.startsWith("08")) {
+              tramo = "8 a 12";
+            } else if (scheduledTime.startsWith("12")) {
+              tramo = "12 a 4";
+            } else if (scheduledTime.startsWith("16") || scheduledTime.startsWith("4")) {
+              tramo = "4 a 8";
+            } else {
+              tramo = scheduledTime;
+            }
+            contentHTML += `<p>Programado para: ${row[36]} de ${tramo}</p>`;
+          } else if (category === "reviewed") {
+            contentHTML += `
+              <p>Número de contacto: ${row[9] || ''}</p>
+              <p>Distrito: ${row[13] || ''}</p>
+              <p>Llamar a programar por favor</p>
+            `;
+          } else if (category === "notInstalled") {
+            let scheduledTime = row[37] || "";
+            let tramo = "";
+            if (scheduledTime.startsWith("08")) {
+              tramo = "8 a 12";
+            } else if (scheduledTime.startsWith("12")) {
+              tramo = "12 a 4";
+            } else if (scheduledTime.startsWith("16") || scheduledTime.startsWith("4")) {
+              tramo = "4 a 8";
+            } else {
+              tramo = scheduledTime;
+            }
+            contentHTML += `
+              <p>Celular: ${row[9] || ''}</p>
+              <p>Distrito: ${row[13] || ''}</p>
+              <p>Programado para: ${row[36]} de ${tramo}</p>
+              <p>Me puede facilitar información del status de este cliente por favor</p>
+            `;
+          } else if (category === "inProgress") {
+            contentHTML += `<p>En progreso</p>`;
+          } else if (category === "desaprobados") {
+            contentHTML += `<p>${row[24] || ''} - ${row[25] || ''}</p>`;
+          }
+          clientDiv.innerHTML = contentHTML;
+
+          // Evento para copiar solo el DNI
+          const dniSpan = clientDiv.querySelector('.dni');
+          dniSpan.addEventListener('click', () => {
+            const originalText = dniSpan.textContent;
+            navigator.clipboard.writeText(originalText)
+              .then(() => {
+                dniSpan.textContent = "copiado";
+                setTimeout(() => { dniSpan.textContent = originalText; }, 1000);
+              })
+              .catch(err => { alert(`Error al copiar el ${docLabel}.`); });
+          });
+
+          // Contenedor de botones
+          const buttonsContainer = document.createElement('div');
+          buttonsContainer.classList.add('client-buttons');
+
+          const copyButton = document.createElement('button');
+          copyButton.textContent = 'Copiar';
+          if (isCopied(dni)) {
+            copyButton.textContent = '✔ Copiado!';
+            copyButton.style.backgroundColor = "#4CAF50";
+            clientDiv.style.opacity = "0.5";
+            copyButton.dataset.copied = "true";
+          } else {
+            copyButton.dataset.copied = "false";
+          }
+          buttonsContainer.appendChild(copyButton);
+
+          // Acción para el botón Copiar
+          copyButton.addEventListener('click', () => {
+            if (copyButton.dataset.copied === "true") {
+              copyButton.textContent = 'Copiar';
+              copyButton.style.backgroundColor = "#6c63ff";
+              clientDiv.style.opacity = "1";
+              copyButton.dataset.copied = "false";
+              setCopiedState(dni, false);
+            } else {
+              const textToCopy = getClientCopyText(clientInfo);
+              navigator.clipboard.writeText(textToCopy)
+                .then(() => {
+                  copyButton.textContent = '✔ Copiado!';
+                  copyButton.style.backgroundColor = "#4CAF50";
+                  clientDiv.style.opacity = "0.5";
+                  copyButton.dataset.copied = "true";
+                  setCopiedState(dni, true);
+                })
+                .catch(err => { alert("Error al copiar el texto."); });
+            }
+          });
+
+          // Botón "Derivado" con funcionalidad de toggle
+          const derivarButton = document.createElement('button');
+          if (isDniDerived(dni)) {
+            derivarButton.textContent = 'Derivado ✓';
+            clientDiv.classList.add('derivado');
+          } else {
+            derivarButton.textContent = 'Derivado';
+          }
+          derivarButton.addEventListener('click', () => {
+            if (isDniDerived(dni)) {
+              removeDerivedDni(dni);
+              derivarButton.textContent = 'Derivado';
+              clientDiv.classList.remove('derivado');
+            } else {
+              saveDerivedDni(dni);
+              derivarButton.textContent = 'Derivado ✓';
+              clientDiv.classList.add('derivado');
+            }
+          });
+          buttonsContainer.appendChild(derivarButton);
+
+          clientDiv.appendChild(buttonsContainer);
+
+          // Crear el contenedor de notas
+          const notesContainer = document.createElement('div');
+          notesContainer.className = 'client-notes-container';
+          notesContainer.innerHTML = `<p style="margin-bottom: 5px;">Notas:</p>`;
+          const noteData = getNoteDataForDni(dni);
+          let noteElement = createNoteElement(noteData.note, noteData.timestamp);
+          noteElement.dataset.dni = dni;
+          noteElement.addEventListener('click', function(e) {
+            openNoteModal(dni, noteElement);
+          });
+          notesContainer.appendChild(noteElement);
+          clientDiv.appendChild(notesContainer);
+
+          // Agregar el bloque al contenedor según la categoría
+          if (category === "installed") { installed.clientsContainer.appendChild(clientDiv); updateCount(installed); }
+          else if (category === "programmed") { programmed.clientsContainer.appendChild(clientDiv); updateCount(programmed); }
+          else if (category === "reviewed") { reviewed.clientsContainer.appendChild(clientDiv); updateCount(reviewed); }
+          else if (category === "notInstalled") { notInstalled.clientsContainer.appendChild(clientDiv); updateCount(notInstalled); }
+          else if (category === "inProgress") { inProgress.clientsContainer.appendChild(clientDiv); updateCount(inProgress); }
+          else if (category === "desaprobados") { desaprobados.clientsContainer.appendChild(clientDiv); updateCount(desaprobados); }
+        });
+        resultsContainer.appendChild(installed.container);
+        resultsContainer.appendChild(programmed.container);
+        resultsContainer.appendChild(reviewed.container);
+        resultsContainer.appendChild(notInstalled.container);
+        resultsContainer.appendChild(inProgress.container);
+        resultsContainer.appendChild(desaprobados.container);
+        applySearchFilter();
+      }
+
+      // Función para crear el recuadro de nota con truncado y fecha visible
+      function createNoteElement(note, timestamp) {
+        const container = document.createElement('div');
+        container.classList.add('client-notes');
+        let truncated = note;
+        if (note.length > 20) {
+          truncated = note.substring(0,20) + "...";
+        }
+        const contentSpan = document.createElement('span');
+        contentSpan.classList.add('note-content');
+        contentSpan.textContent = truncated;
+        container.appendChild(contentSpan);
+        if (timestamp) {
+          const tsSpan = document.createElement('span');
+          tsSpan.className = "note-timestamp";
+          tsSpan.textContent = `(${timestamp})`;
+          container.appendChild(tsSpan);
+        }
+        return container;
+      }
+
+      // Función para abrir el modal de edición de nota
+      function openNoteModal(dni, noteElement) {
+        const modal = document.getElementById('note-modal');
+        const textarea = document.getElementById('note-modal-textarea');
+        const timestampDiv = document.getElementById('note-modal-timestamp');
+        const saveButton = document.getElementById('note-modal-save');
+        const closeButton = document.getElementById('note-modal-close');
+        const closeSpan = document.querySelector('.close-button');
+        const noteData = getNoteDataForDni(dni);
+        textarea.value = noteData.note;
+        timestampDiv.textContent = noteData.timestamp ? `Última modificación: ${noteData.timestamp}` : "";
+        modal.style.display = "block";
+
+        function closeModal() {
+          modal.style.display = "none";
+          saveButton.removeEventListener('click', saveHandler);
+          closeButton.removeEventListener('click', closeModal);
+          closeSpan.removeEventListener('click', closeModal);
+        }
+        function saveHandler() {
+          const newNote = textarea.value;
+          saveNotesForDni(dni, newNote);
+          const newData = getNoteDataForDni(dni);
+          const newNoteElement = createNoteElement(newData.note, newData.timestamp);
+          newNoteElement.dataset.dni = dni;
+          newNoteElement.addEventListener('click', function(e) {
+            openNoteModal(dni, newNoteElement);
+          });
+          noteElement.parentNode.replaceChild(newNoteElement, noteElement);
+          closeModal();
+        }
+        saveButton.addEventListener('click', saveHandler);
+        closeButton.addEventListener('click', closeModal);
+        closeSpan.addEventListener('click', closeModal);
+        window.onclick = function(event) {
+          if (event.target == modal) { closeModal(); }
+        };
+      }
+    });
+  </script>
+</body>
 </html>
