@@ -63,7 +63,6 @@
       flex-direction: column;
       justify-content: space-between;
     }
-    /* Estilo para clientes derivados */
     .client-block.derivado {
       background-color: #ffe0b2;
     }
@@ -88,7 +87,6 @@
     .client-notes-container {
       margin-top: 10px;
     }
-    /* Recuadro de notas en línea: se mantiene en su posición original */
     .client-notes {
       border: 1px solid #ddd;
       padding: 5px;
@@ -101,7 +99,6 @@
       cursor: pointer;
       position: relative;
     }
-    /* La fecha se muestra siempre debajo del contenido de la nota */
     .note-timestamp {
       font-size: 0.7em;
       color: #777;
@@ -130,7 +127,6 @@
       white-space: pre-wrap;
       word-wrap: break-word;
     }
-    /* Estilos para el modal de edición de nota */
     .modal {
       display: none;
       position: fixed;
@@ -164,11 +160,6 @@
     .close-button:hover {
       color: #000;
     }
-    /* Botón para guardar el JSON */
-    #guardar-json-btn {
-      margin-top: 10px;
-      background-color: #009688;
-    }
   </style>
   <!-- Se incluye la librería XLSX para leer archivos Excel -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -186,9 +177,6 @@
     <input type="text" id="search-input" placeholder="Buscar por Nombre o DNI">
   </div>
 
-  <!-- Botón para guardar el estado en un archivo JSON -->
-  <button id="guardar-json-btn">Guardar Estado JSON</button>
-
   <div id="results"></div>
 
   <!-- Modal para edición de nota -->
@@ -204,38 +192,56 @@
   </div>
 
   <script>
-    // Declaramos el objeto global para almacenar el estado de cada cliente
+    // URL de tu Google Apps Script (endpoint)
+    const API_URL = "https://script.google.com/a/macros/corporacionvconnections.com/s/AKfycbxiX4PdcZLTKs4UTvYEwxM6q-1mbg63IfBSZ9Ga2NmHClYTVa5jGkjn3Pv6iNgTVORJ/exec";
+
+    // Objeto global para almacenar el estado de clientes (clave: DNI)
     let clientesEstado = {};
 
-    // Función para cargar el estado inicial desde el JSON (si existe)
-    function cargarJSONEstado() {
-      fetch('clientes_estado.json')
-        .then(response => {
-          if (!response.ok) {
-            throw new Error("No se pudo cargar el JSON");
-          }
-          return response.json();
-        })
+    // Cargar el estado desde Google Sheets vía el endpoint (GET)
+    function cargarEstado() {
+      fetch(API_URL)
+        .then(response => response.json())
         .then(data => {
-          clientesEstado = data;
+          // Se espera que data sea un array de objetos con al menos la propiedad "DNI"
+          clientesEstado = {};
+          data.forEach(cliente => {
+            if (cliente.DNI) {
+              clientesEstado[cliente.DNI] = cliente;
+            }
+          });
         })
         .catch(err => {
-          console.warn("No se encontró el archivo JSON, se usará objeto vacío", err);
+          console.error("Error al cargar el estado:", err);
           clientesEstado = {};
         });
     }
 
-    // Función para actualizar el estado de un cliente (por DNI)
-    function getEstadoCliente(dni) {
-      return clientesEstado[dni] || { copiado: "no", derivado: "no", nota: "", timestamp: "" };
-    }
+    // Actualiza el estado de un cliente y lo guarda vía POST a Google Apps Script
     function actualizarEstadoCliente(dni, newState) {
-      clientesEstado[dni] = { ...getEstadoCliente(dni), ...newState };
+      clientesEstado[dni] = { ...getEstadoCliente(dni), ...newState, DNI: dni };
+      // Se envía el objeto del cliente (con DNI y demás campos) mediante POST
+      fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(clientesEstado[dni])
+      })
+      .then(() => { console.log("Estado actualizado para DNI:", dni); })
+      .catch(err => { console.error("Error al actualizar estado para DNI:", dni, err); });
     }
 
-    // Funciones para manejar el estado "derivado"
+    // Retorna el estado de un cliente; si no existe, devuelve valores por defecto
+    function getEstadoCliente(dni) {
+      return clientesEstado[dni] || { copiado: "no", derivado: "no", nota: "", timestamp: "", DNI: dni };
+    }
+
+    // Funciones para "derivado" basadas en el objeto clientesEstado
     function getDerivedDnis() {
-      return Object.keys(clientesEstado).filter(dni => getEstadoCliente(dni).derivado === "si");
+      const derived = [];
+      Object.keys(clientesEstado).forEach(dni => {
+        if (getEstadoCliente(dni).derivado === "si") derived.push(dni);
+      });
+      return derived;
     }
     function saveDerivedDni(dni) {
       actualizarEstadoCliente(dni, { derivado: "si" });
@@ -270,23 +276,9 @@
       }
     }
 
-    // Función para guardar el JSON actualizado y descargarlo
-    function guardarJSON() {
-      const dataStr = JSON.stringify(clientesEstado, null, 2);
-      const blob = new Blob([dataStr], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = "clientes_estado.json";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
-      cargarJSONEstado();
+      // Cargar el estado inicial desde Google Sheets
+      cargarEstado();
 
       const clientsPerLine = 6;
       document.documentElement.style.setProperty('--clients-per-line', clientsPerLine);
@@ -295,11 +287,8 @@
       const fileInput = document.getElementById('file-input');
       const resultsContainer = document.getElementById('results');
       const searchInput = document.getElementById('search-input');
-      const guardarJSONBtn = document.getElementById('guardar-json-btn');
 
       let currentRows = [];
-
-      guardarJSONBtn.addEventListener('click', guardarJSON);
 
       function applySearchFilter() {
         const searchTerm = searchInput.value.toLowerCase();
@@ -312,7 +301,7 @@
       }
       searchInput.addEventListener('input', applySearchFilter);
 
-      // Previene comportamientos por defecto en el área de arrastre
+      // Prevención de comportamiento por defecto en el área de arrastre
       ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         dropArea.addEventListener(eventName, preventDefaults, false);
         document.body.addEventListener(eventName, preventDefaults, false);
@@ -357,7 +346,7 @@
           for (let r = range.s.r; r <= range.e.r; r++) {
             const row = [];
             for (let c = range.s.c; c <= range.e.c; c++) {
-              const cellRef = XLSX.utils.encode_cell({r: r, c: c});
+              const cellRef = XLSX.utils.encode_cell({ r: r, c: c });
               const cell = worksheet[cellRef];
               if (!cell) { row.push(''); continue; }
               if (cell.t === 'n' && cell.w) { row.push(cell.w); }
@@ -399,7 +388,7 @@
         reader.readAsText(file);
       }
       
-      // Función que genera el texto a copiar para cada cliente
+      // Función para generar el texto a copiar para cada cliente
       function getClientCopyText(clientInfo) {
         let text = `Nombre: ${clientInfo.nombre}\n${clientInfo.docLabel}: ${clientInfo.dni}\n`;
         if(clientInfo.category === "installed") {
@@ -611,7 +600,7 @@
           }
           clientDiv.innerHTML = contentHTML;
 
-          // Evento para copiar solo el DNI
+          // Evento para copiar el DNI
           const dniSpan = clientDiv.querySelector('.dni');
           dniSpan.addEventListener('click', () => {
             const originalText = dniSpan.textContent;
@@ -623,7 +612,7 @@
               .catch(err => { alert(`Error al copiar el ${docLabel}.`); });
           });
 
-          // Contenedor de botones
+          // Botones de acción
           const buttonsContainer = document.createElement('div');
           buttonsContainer.classList.add('client-buttons');
 
@@ -639,7 +628,6 @@
           }
           buttonsContainer.appendChild(copyButton);
 
-          // Acción para el botón Copiar
           copyButton.addEventListener('click', () => {
             if (copyButton.dataset.copied === "true") {
               copyButton.textContent = 'Copiar';
@@ -661,7 +649,6 @@
             }
           });
 
-          // Botón "Derivado" con funcionalidad de toggle
           const derivarButton = document.createElement('button');
           if (isDniDerived(dni)) {
             derivarButton.textContent = 'Derivado ✓';
@@ -684,7 +671,7 @@
 
           clientDiv.appendChild(buttonsContainer);
 
-          // Crear el contenedor de notas
+          // Notas
           const notesContainer = document.createElement('div');
           notesContainer.className = 'client-notes-container';
           notesContainer.innerHTML = `<p style="margin-bottom: 5px;">Notas:</p>`;
@@ -697,7 +684,6 @@
           notesContainer.appendChild(noteElement);
           clientDiv.appendChild(notesContainer);
 
-          // Agregar el bloque al contenedor según la categoría
           if (category === "installed") { installed.clientsContainer.appendChild(clientDiv); updateCount(installed); }
           else if (category === "programmed") { programmed.clientsContainer.appendChild(clientDiv); updateCount(programmed); }
           else if (category === "reviewed") { reviewed.clientsContainer.appendChild(clientDiv); updateCount(reviewed); }
@@ -714,14 +700,11 @@
         applySearchFilter();
       }
 
-      // Función para crear el recuadro de nota con truncado y fecha visible
       function createNoteElement(note, timestamp) {
         const container = document.createElement('div');
         container.classList.add('client-notes');
         let truncated = note;
-        if (note.length > 20) {
-          truncated = note.substring(0,20) + "...";
-        }
+        if (note.length > 20) { truncated = note.substring(0,20) + "..."; }
         const contentSpan = document.createElement('span');
         contentSpan.classList.add('note-content');
         contentSpan.textContent = truncated;
@@ -735,7 +718,6 @@
         return container;
       }
 
-      // Función para abrir el modal de edición de nota
       function openNoteModal(dni, noteElement) {
         const modal = document.getElementById('note-modal');
         const textarea = document.getElementById('note-modal-textarea');
