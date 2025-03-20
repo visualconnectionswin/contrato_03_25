@@ -162,7 +162,7 @@
   </style>
   <!-- Librería XLSX para leer archivos Excel -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <!-- Firebase (versión 8 para facilitar la integración sin módulos) -->
+  <!-- Firebase (versión 8) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 </head>
@@ -199,7 +199,7 @@
       apiKey: "AIzaSyCkPL0qOB0maHD8U6F-lxD_Pq7xUpSPuhc",
       authDomain: "estadoclientes-146b02.firebaseapp.com",
       projectId: "estadoclientes-146b02",
-      storageBucket: "estadoclientes-146b02.firebasestorage.app",
+      storageBucket: "estadoclientes-146b02.appspot.com", // Asegúrate de que este valor sea correcto
       messagingSenderId: "906681118562",
       appId: "1:906681118562:web:471770225b337781fa863b",
       measurementId: "G-BW86W5P717"
@@ -210,7 +210,7 @@
     // Objeto global para almacenar el estado de clientes (clave: DNI)
     let clientesEstado = {};
 
-    // Función para cargar el estado desde Firebase Firestore (GET)
+    // Función para cargar el estado desde Firestore
     function cargarEstado() {
       return db.collection("clientes").get()
         .then(querySnapshot => {
@@ -228,46 +228,27 @@
         });
     }
 
-    // Actualiza el estado de un cliente y lo guarda en Firestore (SET)
+    // Actualiza el estado de un cliente y lo guarda en Firestore
     function actualizarEstadoCliente(dni, newState) {
       clientesEstado[dni] = { ...getEstadoCliente(dni), ...newState, DNI: dni };
       db.collection("clientes").doc(dni).set(clientesEstado[dni], { merge: true })
-      .then(() => { console.log("Estado actualizado para DNI:", dni); })
-      .catch(err => { console.error("Error al actualizar estado para DNI:", dni, err); });
+        .then(() => { console.log("Estado actualizado para DNI:", dni); })
+        .catch(err => { console.error("Error al actualizar estado para DNI:", dni, err); });
     }
 
-    // Retorna el estado de un cliente; si no existe, devuelve valores por defecto
+    // Retorna el estado de un cliente o valores por defecto
     function getEstadoCliente(dni) {
       return clientesEstado[dni] || { copiado: "no", derivado: "no", nota: "", timestamp: "", DNI: dni };
     }
 
-    // Funciones para manejar el estado "derivado"
-    function getDerivedDnis() {
-      const derived = [];
-      Object.keys(clientesEstado).forEach(dni => {
-        if (getEstadoCliente(dni).derivado === "si") derived.push(dni);
-      });
-      return derived;
-    }
-    function saveDerivedDni(dni) {
-      actualizarEstadoCliente(dni, { derivado: "si" });
-    }
-    function removeDerivedDni(dni) {
-      actualizarEstadoCliente(dni, { derivado: "no" });
-    }
-    function isDniDerived(dni) {
-      return getEstadoCliente(dni).derivado === "si";
-    }
+    // Funciones para manejar "derivado" y "copiado"
+    function saveDerivedDni(dni) { actualizarEstadoCliente(dni, { derivado: "si" }); }
+    function removeDerivedDni(dni) { actualizarEstadoCliente(dni, { derivado: "no" }); }
+    function isDniDerived(dni) { return getEstadoCliente(dni).derivado === "si"; }
+    function setCopiedState(dni, state) { actualizarEstadoCliente(dni, { copiado: state ? "si" : "no" }); }
+    function isCopied(dni) { return getEstadoCliente(dni).copiado === "si"; }
 
-    // Funciones para manejar el estado "copiado"
-    function setCopiedState(dni, state) {
-      actualizarEstadoCliente(dni, { copiado: state ? "si" : "no" });
-    }
-    function isCopied(dni) {
-      return getEstadoCliente(dni).copiado === "si";
-    }
-
-    // Funciones para manejar las notas
+    // Funciones para manejar notas
     function getNoteDataForDni(dni) {
       const estado = getEstadoCliente(dni);
       return { note: estado.nota || '', timestamp: estado.timestamp || '' };
@@ -282,47 +263,14 @@
       }
     }
 
-    // Función para manejar el evento drop
-    function handleDrop(e) {
-      const dt = e.dataTransfer;
-      const files = dt.files;
-      handleFiles(files);
-    }
-
+    // Esperamos a que el DOM se cargue completamente
     document.addEventListener('DOMContentLoaded', () => {
-      // Antes de procesar cualquier archivo, cargamos el estado desde Firestore.
-      cargarEstado();
 
-      const clientsPerLine = 6;
-      document.documentElement.style.setProperty('--clients-per-line', clientsPerLine);
-
+      // Manejo de arrastre y suelta
       const dropArea = document.getElementById('drop-area');
-      const fileInput = document.getElementById('file-input');
-      const resultsContainer = document.getElementById('results');
-      const searchInput = document.getElementById('search-input');
-
-      let currentRows = [];
-
-      function applySearchFilter() {
-        const searchTerm = searchInput.value.toLowerCase();
-        resultsContainer.querySelectorAll('.clients-container').forEach(container => {
-          container.childNodes.forEach(clientBlock => {
-            const blockText = clientBlock.textContent.toLowerCase();
-            clientBlock.style.display = blockText.includes(searchTerm) ? '' : 'none';
-          });
-        });
-      }
-      searchInput.addEventListener('input', applySearchFilter);
-
-      // Prevención de comportamiento por defecto en el área de arrastre
       ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, preventDefaults, false);
-        document.body.addEventListener(eventName, preventDefaults, false);
+        dropArea.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
       });
-      function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
       ['dragenter', 'dragover'].forEach(eventName => {
         dropArea.addEventListener(eventName, () => dropArea.classList.add('highlight'), false);
       });
@@ -330,16 +278,29 @@
         dropArea.addEventListener(eventName, () => dropArea.classList.remove('highlight'), false);
       });
       dropArea.addEventListener('drop', handleDrop, false);
+
+      // Input de archivos
+      const fileInput = document.getElementById('file-input');
       fileInput.addEventListener('change', (e) => {
         const files = e.target.files;
         handleFiles(files);
       });
 
-      // Al cargar un nuevo archivo, recargamos el estado desde Firestore antes de procesarlo.
+      // Función para manejar el evento drop
+      function handleDrop(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+      }
+
+      // Función para procesar archivos
       function handleFiles(files) {
         if (files.length === 0) return;
         cargarEstado().then(() => {
           const file = files[0];
+          const resultsContainer = document.getElementById('results');
           resultsContainer.innerHTML = '';
           const fileName = file.name.toLowerCase();
           if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
@@ -366,9 +327,7 @@
             for (let c = range.s.c; c <= range.e.c; c++) {
               const cellRef = XLSX.utils.encode_cell({ r: r, c: c });
               const cell = worksheet[cellRef];
-              if (!cell) { row.push(''); continue; }
-              if (cell.t === 'n' && cell.w) { row.push(cell.w); }
-              else { row.push(cell.v); }
+              row.push(cell ? (cell.t === 'n' && cell.w ? cell.w : cell.v) : '');
             }
             rawData.push(row);
           }
@@ -392,11 +351,9 @@
             return;
           }
           const rows = [];
-          const trElements = table.querySelectorAll('tr');
-          trElements.forEach(tr => {
+          table.querySelectorAll('tr').forEach(tr => {
             const row = [];
-            const cells = tr.querySelectorAll('th, td');
-            cells.forEach(cell => row.push(cell.textContent.trim()));
+            tr.querySelectorAll('th, td').forEach(cell => row.push(cell.textContent.trim()));
             rows.push(row);
           });
           processData(rows);
@@ -407,13 +364,13 @@
         reader.readAsText(file);
       }
 
-      // Función que genera el texto a copiar para cada cliente
+      // Genera el texto a copiar para cada cliente
       function getClientCopyText(clientInfo) {
         let text = `Nombre: ${clientInfo.nombre}\n${clientInfo.docLabel}: ${clientInfo.dni}\n`;
         if (clientInfo.category === "installed") {
           text += "Instalada!";
         } else if (clientInfo.category === "programmed") {
-          const scheduledTime = clientInfo.rowData[37] || "";
+          const scheduledTime = clientInfo.rowData[37] ? String(clientInfo.rowData[37]).trim() : "";
           let tramo = "";
           if (scheduledTime.startsWith("08")) tramo = "8 a 12";
           else if (scheduledTime.startsWith("12")) tramo = "12 a 4";
@@ -423,7 +380,7 @@
         } else if (clientInfo.category === "reviewed") {
           text += `Número de contacto: ${clientInfo.rowData[9] || ''}\nDistrito: ${clientInfo.rowData[13] || ''}\nLlamar a programar por favor`;
         } else if (clientInfo.category === "notInstalled") {
-          const scheduledTime = clientInfo.rowData[37] || "";
+          const scheduledTime = clientInfo.rowData[37] ? String(clientInfo.rowData[37]).trim() : "";
           let tramo = "";
           if (scheduledTime.startsWith("08")) tramo = "8 a 12";
           else if (scheduledTime.startsWith("12")) tramo = "12 a 4";
@@ -439,7 +396,6 @@
       }
 
       function processData(rows) {
-        currentRows = rows;
         const now = new Date();
         function updateCount(categoryContainer) {
           categoryContainer.countSpan.textContent = " (" + categoryContainer.clientsContainer.childElementCount + ")";
@@ -520,28 +476,37 @@
             let category = "";
             if (estadoOrden === "ejecutada") {
               category = "installed";
-            } else if (statePedido === "validado" && estadoOrden === "programada" && row[36] && row[36].trim() !== "" && row[37] && row[37].trim() !== "") {
-              const scheduledDateStr = row[36].trim();
-              const scheduledTimeStr = row[37].trim();
-              const dateParts = scheduledDateStr.split("-");
-              if (dateParts.length < 3) {
-                category = "desaprobados";
-              } else {
-                const day = parseInt(dateParts[0], 10);
-                const month = parseInt(dateParts[1], 10) - 1;
-                const year = parseInt(dateParts[2], 10);
-                const timeParts = scheduledTimeStr.split(/[:\s]+/);
-                let hour = parseInt(timeParts[0], 10);
-                const minute = parseInt(timeParts[1], 10);
-                const second = parseInt(timeParts[2], 10);
-                if (timeParts.length > 3) {
-                  const ampm = timeParts[3].toUpperCase();
-                  if (ampm === "PM" && hour < 12) { hour += 12; }
-                  if (ampm === "AM" && hour === 12) { hour = 0; }
+            } else if (
+              statePedido === "validado" &&
+              estadoOrden === "programada" &&
+              row[36] && row[37]
+            ) {
+              // Convertimos a cadena para evitar errores en .trim()
+              const scheduledDateStr = row[36] ? String(row[36]).trim() : "";
+              const scheduledTimeStr = row[37] ? String(row[37]).trim() : "";
+              if (scheduledDateStr !== "" && scheduledTimeStr !== "") {
+                const dateParts = scheduledDateStr.split("-");
+                if (dateParts.length < 3) {
+                  category = "desaprobados";
+                } else {
+                  const day = parseInt(dateParts[0], 10);
+                  const month = parseInt(dateParts[1], 10) - 1;
+                  const year = parseInt(dateParts[2], 10);
+                  const timeParts = scheduledTimeStr.split(/[:\s]+/);
+                  let hour = parseInt(timeParts[0], 10);
+                  const minute = parseInt(timeParts[1], 10);
+                  const second = parseInt(timeParts[2], 10);
+                  if (timeParts.length > 3) {
+                    const ampm = timeParts[3].toUpperCase();
+                    if (ampm === "PM" && hour < 12) { hour += 12; }
+                    if (ampm === "AM" && hour === 12) { hour = 0; }
+                  }
+                  const scheduledDateTime = new Date(year, month, day, hour, minute, second);
+                  const scheduledEndTime = new Date(scheduledDateTime.getTime() + 4 * 60 * 60 * 1000);
+                  category = (now <= scheduledEndTime) ? "programmed" : "notInstalled";
                 }
-                const scheduledDateTime = new Date(year, month, day, hour, minute, second);
-                const scheduledEndTime = new Date(scheduledDateTime.getTime() + 4 * 60 * 60 * 1000);
-                category = (now <= scheduledEndTime) ? "programmed" : "notInstalled";
+              } else {
+                category = "desaprobados";
               }
             } else if (statePedido === "revisado") {
               category = "reviewed";
@@ -572,17 +537,12 @@
           if (category === "installed") {
             contentHTML += `<p>Instalada!</p>`;
           } else if (category === "programmed") {
-            const scheduledTime = row[37] || "";
+            const scheduledTime = row[37] ? String(row[37]).trim() : "";
             let tramo = "";
-            if (scheduledTime.startsWith("08")) {
-              tramo = "8 a 12";
-            } else if (scheduledTime.startsWith("12")) {
-              tramo = "12 a 4";
-            } else if (scheduledTime.startsWith("16") || scheduledTime.startsWith("4")) {
-              tramo = "4 a 8";
-            } else {
-              tramo = scheduledTime;
-            }
+            if (scheduledTime.startsWith("08")) { tramo = "8 a 12"; }
+            else if (scheduledTime.startsWith("12")) { tramo = "12 a 4"; }
+            else if (scheduledTime.startsWith("16") || scheduledTime.startsWith("4")) { tramo = "4 a 8"; }
+            else { tramo = scheduledTime; }
             contentHTML += `<p>Programado para: ${row[36]} de ${tramo}</p>`;
           } else if (category === "reviewed") {
             contentHTML += `
@@ -591,17 +551,12 @@
               <p>Llamar a programar por favor</p>
             `;
           } else if (category === "notInstalled") {
-            const scheduledTime = row[37] || "";
+            const scheduledTime = row[37] ? String(row[37]).trim() : "";
             let tramo = "";
-            if (scheduledTime.startsWith("08")) {
-              tramo = "8 a 12";
-            } else if (scheduledTime.startsWith("12")) {
-              tramo = "12 a 4";
-            } else if (scheduledTime.startsWith("16") || scheduledTime.startsWith("4")) {
-              tramo = "4 a 8";
-            } else {
-              tramo = scheduledTime;
-            }
+            if (scheduledTime.startsWith("08")) { tramo = "8 a 12"; }
+            else if (scheduledTime.startsWith("12")) { tramo = "12 a 4"; }
+            else if (scheduledTime.startsWith("16") || scheduledTime.startsWith("4")) { tramo = "4 a 8"; }
+            else { tramo = scheduledTime; }
             contentHTML += `
               <p>Celular: ${row[9] || ''}</p>
               <p>Distrito: ${row[13] || ''}</p>
@@ -683,7 +638,6 @@
             }
           });
           buttonsContainer.appendChild(derivarButton);
-
           clientDiv.appendChild(buttonsContainer);
 
           // Notas
@@ -706,6 +660,8 @@
           else if (category === "inProgress") { inProgress.clientsContainer.appendChild(clientDiv); updateCount(inProgress); }
           else if (category === "desaprobados") { desaprobados.clientsContainer.appendChild(clientDiv); updateCount(desaprobados); }
         });
+        const resultsContainer = document.getElementById('results');
+        resultsContainer.innerHTML = '';
         resultsContainer.appendChild(installed.container);
         resultsContainer.appendChild(programmed.container);
         resultsContainer.appendChild(reviewed.container);
@@ -770,6 +726,19 @@
           if (event.target == modal) { closeModal(); }
         };
       }
+
+      // Filtro de búsqueda
+      const searchInput = document.getElementById('search-input');
+      function applySearchFilter() {
+        const searchTerm = searchInput.value.toLowerCase();
+        document.querySelectorAll('.clients-container').forEach(container => {
+          container.childNodes.forEach(clientBlock => {
+            const blockText = clientBlock.textContent.toLowerCase();
+            clientBlock.style.display = blockText.includes(searchTerm) ? '' : 'none';
+          });
+        });
+      }
+      searchInput.addEventListener('input', applySearchFilter);
     });
   </script>
 </body>
