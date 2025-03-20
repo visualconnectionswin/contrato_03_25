@@ -63,6 +63,7 @@
       flex-direction: column;
       justify-content: space-between;
     }
+    /* Estilo para clientes derivados */
     .client-block.derivado {
       background-color: #ffe0b2;
     }
@@ -87,6 +88,7 @@
     .client-notes-container {
       margin-top: 10px;
     }
+    /* Recuadro de notas en línea: se mantiene en su posición original */
     .client-notes {
       border: 1px solid #ddd;
       padding: 5px;
@@ -99,6 +101,7 @@
       cursor: pointer;
       position: relative;
     }
+    /* La fecha se muestra siempre debajo del contenido de la nota */
     .note-timestamp {
       font-size: 0.7em;
       color: #777;
@@ -127,6 +130,7 @@
       white-space: pre-wrap;
       word-wrap: break-word;
     }
+    /* Estilos para el modal de edición de nota */
     .modal {
       display: none;
       position: fixed;
@@ -198,12 +202,12 @@
     // Objeto global para almacenar el estado de clientes (clave: DNI)
     let clientesEstado = {};
 
-    // Cargar el estado desde Google Sheets vía el endpoint (GET)
+    // Función para cargar el estado desde Google Sheets (GET)
     function cargarEstado() {
-      fetch(API_URL)
+      return fetch(API_URL)
         .then(response => response.json())
         .then(data => {
-          // Se espera que data sea un array de objetos con al menos la propiedad "DNI"
+          // Se espera que data sea un array de objetos, cada uno con al menos "DNI"
           clientesEstado = {};
           data.forEach(cliente => {
             if (cliente.DNI) {
@@ -220,7 +224,6 @@
     // Actualiza el estado de un cliente y lo guarda vía POST a Google Apps Script
     function actualizarEstadoCliente(dni, newState) {
       clientesEstado[dni] = { ...getEstadoCliente(dni), ...newState, DNI: dni };
-      // Se envía el objeto del cliente (con DNI y demás campos) mediante POST
       fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -235,7 +238,7 @@
       return clientesEstado[dni] || { copiado: "no", derivado: "no", nota: "", timestamp: "", DNI: dni };
     }
 
-    // Funciones para "derivado" basadas en el objeto clientesEstado
+    // Funciones para manejar el estado "derivado"
     function getDerivedDnis() {
       const derived = [];
       Object.keys(clientesEstado).forEach(dni => {
@@ -277,7 +280,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      // Cargar el estado inicial desde Google Sheets
+      // Antes de procesar cualquier archivo, cargamos el estado desde Google Sheets.
       cargarEstado();
 
       const clientsPerLine = 6;
@@ -321,19 +324,24 @@
         let files = e.target.files;
         handleFiles(files);
       });
+
+      // Al cargar un nuevo archivo, primero recargamos el estado desde Google Sheets.
       function handleFiles(files) {
         if (files.length === 0) return;
-        const file = files[0];
-        resultsContainer.innerHTML = '';
-        const fileName = file.name.toLowerCase();
-        if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
-          readExcel(file);
-        } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
-          readHtml(file);
-        } else {
-          alert('Formato de archivo no soportado.');
-        }
+        cargarEstado().then(() => {
+          const file = files[0];
+          resultsContainer.innerHTML = '';
+          const fileName = file.name.toLowerCase();
+          if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
+            readExcel(file);
+          } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
+            readHtml(file);
+          } else {
+            alert('Formato de archivo no soportado.');
+          }
+        });
       }
+
       function readExcel(file) {
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -361,6 +369,7 @@
         };
         reader.readAsBinaryString(file);
       }
+
       function readHtml(file) {
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -387,8 +396,8 @@
         };
         reader.readAsText(file);
       }
-      
-      // Función para generar el texto a copiar para cada cliente
+
+      // Función que genera el texto a copiar para cada cliente
       function getClientCopyText(clientInfo) {
         let text = `Nombre: ${clientInfo.nombre}\n${clientInfo.docLabel}: ${clientInfo.dni}\n`;
         if(clientInfo.category === "installed") {
