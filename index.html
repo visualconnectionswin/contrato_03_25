@@ -6,8 +6,8 @@
   <title>Procesador de archivos de clientes - CRM</title>
   <!-- Fuente Poppins -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
-        integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+        integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
     :root {
@@ -181,7 +181,7 @@
   <!-- Modal para edición de nota -->
   <div id="note-modal" class="modal">
     <div class="modal-content">
-      <span class="close-button">&times;</span>
+      <span class="close-button">×</span>
       <h3>Editar Nota</h3>
       <textarea id="note-modal-textarea" rows="5" style="width:100%;"></textarea>
       <div id="note-modal-timestamp" style="font-size:0.8em; color:#777; margin-top:10px;"></div>
@@ -198,22 +198,24 @@
     let clientesEstado = {};
 
     // Función para cargar el estado desde Google Sheets (GET)
-    function cargarEstado() {
-      return fetch(API_URL)
-        .then(response => response.json())
-        .then(data => {
-          // Se espera que data sea un array de objetos, cada uno con al menos "DNI"
-          clientesEstado = {};
-          data.forEach(cliente => {
-            if (cliente.DNI) {
-              clientesEstado[cliente.DNI] = cliente;
-            }
-          });
-        })
-        .catch(err => {
-          console.error("Error al cargar el estado:", err);
-          clientesEstado = {};
+    async function cargarEstado() { // Marcamos la función como async
+      try {
+        const response = await fetch(API_URL); // Usamos await para esperar la respuesta
+        if (!response.ok) { // Verificamos si la respuesta fue exitosa (código 200-299)
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json(); // Usamos await para esperar la conversión a JSON
+        // Se espera que data sea un array de objetos, cada uno con al menos "DNI"
+        clientesEstado = {};
+        data.forEach(cliente => {
+          if (cliente.DNI) {
+            clientesEstado[cliente.DNI] = cliente;
+          }
         });
+      } catch (err) {
+        console.error("Error al cargar el estado:", err);
+        clientesEstado = {};
+      }
     }
 
     // Actualiza el estado de un cliente y lo guarda vía POST a Google Apps Script
@@ -224,7 +226,13 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(clientesEstado[dni])
       })
-      .then(() => { console.log("Estado actualizado para DNI:", dni); })
+      .then(response => { // Agregamos manejo de la respuesta del POST
+        if (!response.ok) {
+          console.error("Error en la respuesta al actualizar estado para DNI:", dni, response);
+        } else {
+          console.log("Estado actualizado para DNI:", dni);
+        }
+      })
       .catch(err => { console.error("Error al actualizar estado para DNI:", dni, err); });
     }
 
@@ -276,15 +284,16 @@
 
     // Definición de handleDrop para solucionar el error
     function handleDrop(e) {
+      e.preventDefault(); // Evita la navegación al soltar el archivo
+      e.stopPropagation();
+      dropArea.classList.remove('highlight');
+
       const dt = e.dataTransfer;
       const files = dt.files;
       handleFiles(files);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      // Antes de procesar cualquier archivo, cargamos el estado desde Google Sheets.
-      cargarEstado();
-
       const clientsPerLine = 6;
       document.documentElement.style.setProperty('--clients-per-line', clientsPerLine);
 
@@ -328,20 +337,19 @@
       });
 
       // Al cargar un nuevo archivo, recargamos el estado desde Google Sheets antes de procesarlo.
-      function handleFiles(files) {
+      async function handleFiles(files) { // Marcamos handleFiles como async
         if (files.length === 0) return;
-        cargarEstado().then(() => {
-          const file = files[0];
-          resultsContainer.innerHTML = '';
-          const fileName = file.name.toLowerCase();
-          if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
-            readExcel(file);
-          } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
-            readHtml(file);
-          } else {
-            alert('Formato de archivo no soportado.');
-          }
-        });
+        await cargarEstado(); // Esperamos que se cargue el estado antes de procesar el archivo
+        const file = files[0];
+        resultsContainer.innerHTML = '';
+        const fileName = file.name.toLowerCase();
+        if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
+          readExcel(file);
+        } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
+          readHtml(file);
+        } else {
+          alert('Formato de archivo no soportado.');
+        }
       }
 
       function readExcel(file) {
@@ -411,9 +419,9 @@
           else if (scheduledTime.startsWith("12")) tramo = "12 a 4";
           else if (scheduledTime.startsWith("16") || scheduledTime.startsWith("4")) tramo = "4 a 8";
           else tramo = scheduledTime;
-          text += `Programado para: ${clientInfo.rowData[36]} de ${tramo}`;
+          text += `Programado para: ${clientInfo.rowData[36]} de ${tramo};`;
         } else if (clientInfo.category === "reviewed") {
-          text += `Número de contacto: ${clientInfo.rowData[9] || ''}\nDistrito: ${clientInfo.rowData[13] || ''}\nLlamar a programar por favor`;
+          text += `Número de contacto: ${clientInfo.rowData[9] || ''}\nDistrito: ${clientInfo.rowData[13] || ''}\nLlamar a programar por favor;`;
         } else if (clientInfo.category === "notInstalled") {
           const scheduledTime = clientInfo.rowData[37] || "";
           let tramo = "";
@@ -421,11 +429,11 @@
           else if (scheduledTime.startsWith("12")) tramo = "12 a 4";
           else if (scheduledTime.startsWith("16") || scheduledTime.startsWith("4")) tramo = "4 a 8";
           else tramo = scheduledTime;
-          text += `Celular: ${clientInfo.rowData[9] || ''}\nDistrito: ${clientInfo.rowData[13] || ''}\nProgramado para: ${clientInfo.rowData[36]} de ${tramo}\nMe puede facilitar información del status de este cliente por favor`;
+          text += `Celular: ${clientInfo.rowData[9] || ''}\nDistrito: ${clientInfo.rowData[13] || ''}\nProgramado para: ${clientInfo.rowData[36]} de ${tramo}\nMe puede facilitar información del status de este cliente por favor;`;
         } else if (clientInfo.category === "inProgress") {
           text += "En progreso";
         } else if (clientInfo.category === "desaprobados") {
-          text += `${clientInfo.rowData[24] || ''} - ${clientInfo.rowData[25] || ''}`;
+          text += `${clientInfo.rowData[24] || ''} - ${clientInfo.rowData[25] || ''};`;
         }
         return text;
       }
@@ -762,6 +770,9 @@
           if (event.target == modal) { closeModal(); }
         };
       }
+
+      // Cargar el estado inicial al cargar la página
+      cargarEstado();
     });
   </script>
 </body>
