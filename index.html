@@ -11,7 +11,6 @@
         crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
     :root {
-      /* Variable para controlar el número de clientes por línea */
       --clients-per-line: 2;
     }
     body {
@@ -63,7 +62,6 @@
       flex-direction: column;
       justify-content: space-between;
     }
-    /* Estilo para clientes derivados */
     .client-block.derivado {
       background-color: #ffe0b2;
     }
@@ -88,7 +86,6 @@
     .client-notes-container {
       margin-top: 10px;
     }
-    /* Recuadro de notas en línea: se mantiene en su posición original */
     .client-notes {
       border: 1px solid #ddd;
       padding: 5px;
@@ -101,7 +98,6 @@
       cursor: pointer;
       position: relative;
     }
-    /* La fecha se muestra siempre debajo del contenido de la nota */
     .note-timestamp {
       font-size: 0.7em;
       color: #777;
@@ -130,7 +126,6 @@
       white-space: pre-wrap;
       word-wrap: break-word;
     }
-    /* Estilos para el modal de edición de nota */
     .modal {
       display: none;
       position: fixed;
@@ -279,6 +274,13 @@
       }
     }
 
+    // Definición de handleDrop para solucionar el error
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      handleFiles(files);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       // Antes de procesar cualquier archivo, cargamos el estado desde Google Sheets.
       cargarEstado();
@@ -321,11 +323,11 @@
       });
       dropArea.addEventListener('drop', handleDrop, false);
       fileInput.addEventListener('change', (e) => {
-        let files = e.target.files;
+        const files = e.target.files;
         handleFiles(files);
       });
 
-      // Al cargar un nuevo archivo, primero recargamos el estado desde Google Sheets.
+      // Al cargar un nuevo archivo, recargamos el estado desde Google Sheets antes de procesarlo.
       function handleFiles(files) {
         if (files.length === 0) return;
         cargarEstado().then(() => {
@@ -345,10 +347,10 @@
       function readExcel(file) {
         const reader = new FileReader();
         reader.onload = function(e) {
-          let data = e.target.result;
-          let workbook = XLSX.read(data, { type: 'binary', cellText: true });
-          let firstSheetName = workbook.SheetNames[0];
-          let worksheet = workbook.Sheets[firstSheetName];
+          const data = e.target.result;
+          const workbook = XLSX.read(data, { type: 'binary', cellText: true });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
           const rawData = [];
           const range = XLSX.utils.decode_range(worksheet['!ref']);
           for (let r = range.s.r; r <= range.e.r; r++) {
@@ -381,10 +383,10 @@
             alert("No se encontró una tabla en el archivo HTML.");
             return;
           }
-          let rows = [];
+          const rows = [];
           const trElements = table.querySelectorAll('tr');
           trElements.forEach(tr => {
-            let row = [];
+            const row = [];
             const cells = tr.querySelectorAll('th, td');
             cells.forEach(cell => row.push(cell.textContent.trim()));
             rows.push(row);
@@ -400,29 +402,29 @@
       // Función que genera el texto a copiar para cada cliente
       function getClientCopyText(clientInfo) {
         let text = `Nombre: ${clientInfo.nombre}\n${clientInfo.docLabel}: ${clientInfo.dni}\n`;
-        if(clientInfo.category === "installed") {
+        if (clientInfo.category === "installed") {
           text += "Instalada!";
-        } else if(clientInfo.category === "programmed") {
-          let scheduledTime = clientInfo.rowData[37] || "";
+        } else if (clientInfo.category === "programmed") {
+          const scheduledTime = clientInfo.rowData[37] || "";
           let tramo = "";
-          if(scheduledTime.startsWith("08")) tramo = "8 a 12";
-          else if(scheduledTime.startsWith("12")) tramo = "12 a 4";
-          else if(scheduledTime.startsWith("16") || scheduledTime.startsWith("4")) tramo = "4 a 8";
+          if (scheduledTime.startsWith("08")) tramo = "8 a 12";
+          else if (scheduledTime.startsWith("12")) tramo = "12 a 4";
+          else if (scheduledTime.startsWith("16") || scheduledTime.startsWith("4")) tramo = "4 a 8";
           else tramo = scheduledTime;
           text += `Programado para: ${clientInfo.rowData[36]} de ${tramo}`;
-        } else if(clientInfo.category === "reviewed") {
+        } else if (clientInfo.category === "reviewed") {
           text += `Número de contacto: ${clientInfo.rowData[9] || ''}\nDistrito: ${clientInfo.rowData[13] || ''}\nLlamar a programar por favor`;
-        } else if(clientInfo.category === "notInstalled") {
-          let scheduledTime = clientInfo.rowData[37] || "";
+        } else if (clientInfo.category === "notInstalled") {
+          const scheduledTime = clientInfo.rowData[37] || "";
           let tramo = "";
-          if(scheduledTime.startsWith("08")) tramo = "8 a 12";
-          else if(scheduledTime.startsWith("12")) tramo = "12 a 4";
-          else if(scheduledTime.startsWith("16") || scheduledTime.startsWith("4")) tramo = "4 a 8";
+          if (scheduledTime.startsWith("08")) tramo = "8 a 12";
+          else if (scheduledTime.startsWith("12")) tramo = "12 a 4";
+          else if (scheduledTime.startsWith("16") || scheduledTime.startsWith("4")) tramo = "4 a 8";
           else tramo = scheduledTime;
           text += `Celular: ${clientInfo.rowData[9] || ''}\nDistrito: ${clientInfo.rowData[13] || ''}\nProgramado para: ${clientInfo.rowData[36]} de ${tramo}\nMe puede facilitar información del status de este cliente por favor`;
-        } else if(clientInfo.category === "inProgress") {
+        } else if (clientInfo.category === "inProgress") {
           text += "En progreso";
-        } else if(clientInfo.category === "desaprobados") {
+        } else if (clientInfo.category === "desaprobados") {
           text += `${clientInfo.rowData[24] || ''} - ${clientInfo.rowData[25] || ''}`;
         }
         return text;
@@ -464,7 +466,7 @@
           container.appendChild(header);
           container.appendChild(clientsContainer);
           header.addEventListener('click', () => {
-            if(clientsContainer.style.display === 'none'){
+            if (clientsContainer.style.display === 'none') {
               clientsContainer.style.display = 'flex';
               toggleIndicator.textContent = 'Ocultar [-]';
             } else {
@@ -484,7 +486,7 @@
 
         const clientsData = [];
         for (let i = 1; i < rows.length; i++) {
-          let row = rows[i];
+          const row = rows[i];
           try {
             let nombre = row[7] || '';
             let dni = row[6] || '';
@@ -511,31 +513,27 @@
             if (estadoOrden === "ejecutada") {
               category = "installed";
             } else if (statePedido === "validado" && estadoOrden === "programada" && row[36] && row[36].trim() !== "" && row[37] && row[37].trim() !== "") {
-              let scheduledDateStr = row[36].trim();
-              let scheduledTimeStr = row[37].trim();
-              let dateParts = scheduledDateStr.split("-");
+              const scheduledDateStr = row[36].trim();
+              const scheduledTimeStr = row[37].trim();
+              const dateParts = scheduledDateStr.split("-");
               if (dateParts.length < 3) {
                 category = "desaprobados";
               } else {
-                let day = parseInt(dateParts[0], 10);
-                let month = parseInt(dateParts[1], 10) - 1;
-                let year = parseInt(dateParts[2], 10);
-                let timeParts = scheduledTimeStr.split(/[:\s]+/);
+                const day = parseInt(dateParts[0], 10);
+                const month = parseInt(dateParts[1], 10) - 1;
+                const year = parseInt(dateParts[2], 10);
+                const timeParts = scheduledTimeStr.split(/[:\s]+/);
                 let hour = parseInt(timeParts[0], 10);
-                let minute = parseInt(timeParts[1], 10);
-                let second = parseInt(timeParts[2], 10);
+                const minute = parseInt(timeParts[1], 10);
+                const second = parseInt(timeParts[2], 10);
                 if (timeParts.length > 3) {
-                  let ampm = timeParts[3].toUpperCase();
+                  const ampm = timeParts[3].toUpperCase();
                   if (ampm === "PM" && hour < 12) { hour += 12; }
                   if (ampm === "AM" && hour === 12) { hour = 0; }
                 }
-                let scheduledDateTime = new Date(year, month, day, hour, minute, second);
-                let scheduledEndTime = new Date(scheduledDateTime.getTime() + 4 * 60 * 60 * 1000);
-                if (now <= scheduledEndTime) {
-                  category = "programmed";
-                } else {
-                  category = "notInstalled";
-                }
+                const scheduledDateTime = new Date(year, month, day, hour, minute, second);
+                const scheduledEndTime = new Date(scheduledDateTime.getTime() + 4 * 60 * 60 * 1000);
+                category = (now <= scheduledEndTime) ? "programmed" : "notInstalled";
               }
             } else if (statePedido === "revisado") {
               category = "reviewed";
@@ -566,7 +564,7 @@
           if (category === "installed") {
             contentHTML += `<p>Instalada!</p>`;
           } else if (category === "programmed") {
-            let scheduledTime = row[37] || "";
+            const scheduledTime = row[37] || "";
             let tramo = "";
             if (scheduledTime.startsWith("08")) {
               tramo = "8 a 12";
@@ -585,7 +583,7 @@
               <p>Llamar a programar por favor</p>
             `;
           } else if (category === "notInstalled") {
-            let scheduledTime = row[37] || "";
+            const scheduledTime = row[37] || "";
             let tramo = "";
             if (scheduledTime.startsWith("08")) {
               tramo = "8 a 12";
