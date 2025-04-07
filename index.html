@@ -751,6 +751,7 @@
 
     // Objeto global para almacenar el estado de clientes (clave: DNI)
     let clientesEstado = {};
+    let previousClientsData = null; // Variable para almacenar los datos del archivo anterior
 
     // Función para cargar el estado desde Firestore
     function cargarEstado() {
@@ -1005,6 +1006,13 @@
         const desaprobados = createCategoryContainer("Clientes desaprobados", "fas fa-ban");
 
         const clientsData = [];
+        const dniToPreviousDataMap = {};
+        if (previousClientsData) {
+            previousClientsData.forEach(client => {
+                dniToPreviousDataMap[client.dni] = client;
+            });
+        }
+
         for (let i = 1; i < rows.length; i++) {
           const row = rows[i];
           try {
@@ -1070,11 +1078,25 @@
             } else {
               category = "desaprobados";
             }
-            clientsData.push({ rowData: row, category: category, nombre: nombre, dni: dni, docLabel: docLabel });
+
+            const currentClientData = { rowData: row, category: category, nombre: nombre, dni: dni, docLabel: docLabel };
+            clientsData.push(currentClientData);
+
+            const previousData = dniToPreviousDataMap[dni];
+            if (previousData) {
+                if (previousData.category !== category || previousData.rowData[36] !== row[36] || previousData.rowData[37] !== row[37]) {
+                    setCopiedState(dni, false);
+                    removeDerivedDni(dni);
+                }
+            }
+
+
           } catch(err) {
             console.error(`Error procesando la fila ${i}: ${err}`);
           }
         }
+        previousClientsData = clientsData; // Guardar los datos actuales para la próxima comparación
+
         clientsData.sort((a, b) => a.nombre.localeCompare(b.nombre));
         clientsData.forEach(clientInfo => {
           const row = clientInfo.rowData;
